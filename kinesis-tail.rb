@@ -2,6 +2,7 @@
 
 require 'aws-sdk'
 
+Aws.use_bundled_cert!
 kinesis = Aws::Kinesis::Client.new
 
 stream_name = ARGV.shift

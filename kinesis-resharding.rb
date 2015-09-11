@@ -2,6 +2,7 @@
 
 require 'aws-sdk'
 
+Aws.use_bundled_cert!
 def has_child_shard(shards,shard_id)
   shards.select{ |s| s[:parent_shard_id] == shard_id}.length > 0
 end
