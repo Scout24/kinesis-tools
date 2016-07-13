@@ -19,33 +19,6 @@ def wait_for_active_state(stream_name)
   puts "\nstream #{stream_name} is now active."
 end
 
-def open_shards(stream_name)
-  stream = @kinesis.describe_stream(stream_name: stream_name).stream_description
-  # closed shards have an ending sequence number, dropping those.
-  stream.shards.select { |s| s.sequence_number_range.ending_sequence_number.nil? }
-end
-
-def has_child_shard(shards, shard_id)
-  shards.select { |s| s.parent_shard_id == shard_id }.length > 0
-end
-
-def scale_up(stream_name)
-  wait_for_active_state stream_name
-  shards = open_shards stream_name
-  puts "scaling up from #{shards.length} to #{shards.length * 2} shards."
-
-  shards.each do |shard|
-    puts "splitting shard #{shard.shard_id}"
-    new_starting_hash_key = ((shard.hash_key_range.starting_hash_key.to_i + shard.hash_key_range.ending_hash_key.to_i) / 2).to_s
-    response = @kinesis.split_shard(
-      stream_name: stream_name,
-      shard_to_split: shard.shard_id,
-      new_starting_hash_key: new_starting_hash_key)
-    sleep 5
-    wait_for_active_state stream_name
-  end
-end
-
 def shard_to_s(shard)
   s = shard
   "id: #{s.shard_id}, #{s.hash_key_range.starting_hash_key} - #{s.hash_key_range.ending_hash_key}"
@@ -55,6 +28,29 @@ def print_shards(shards)
   puts 'shards:'
   shards.each do |shard|
     puts "  #{shard_to_s shard}"
+  end
+end
+
+def open_shards(stream_name)
+  stream = @kinesis.describe_stream(stream_name: stream_name).stream_description
+  # closed shards have an ending sequence number, dropping those.
+  stream.shards.select { |s| s.sequence_number_range.ending_sequence_number.nil? }
+end
+
+def scale_up(stream_name)
+  wait_for_active_state stream_name
+  shards = open_shards stream_name
+  puts "scaling up from #{shards.length} to #{shards.length * 2} shards."
+
+  shards.each do |shard|
+    puts "splitting shard #{shard_to_s shard}"
+    new_starting_hash_key = ((shard.hash_key_range.starting_hash_key.to_i + shard.hash_key_range.ending_hash_key.to_i) / 2).to_s
+    response = @kinesis.split_shard(
+      stream_name: stream_name,
+      shard_to_split: shard.shard_id,
+      new_starting_hash_key: new_starting_hash_key)
+    sleep 5
+    wait_for_active_state stream_name
   end
 end
 
