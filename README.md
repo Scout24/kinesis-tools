@@ -17,6 +17,11 @@ Tools for working with AWS Kinesis streams
 - Doubles the amount of shards
 
 #### Usage
+To double the number of shards, use
 ```
-./kinesis-resharding.rb streamName up
+./kinesis-resharding.rb up streamName
+```
+or to halve the number of shards, use
+```
+./kinesis-resharding.rb down streamName
 ```
